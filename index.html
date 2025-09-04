@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji-Verschlüsseler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Emoji-Verschlüsseler 🔐</h1>
+        <p class="text-center text-gray-600 mb-6">
+            Verwandle Text in Emojis oder entschlüssele sie zurück.
+        </p>
+
+        <div class="space-y-4">
+            <div>
+                <label for="inputText" class="block text-gray-700 font-medium mb-1">Text- oder Emoji-Eingabe</label>
+                <textarea id="inputText" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" rows="4" placeholder="Gib hier Text oder Emojis ein..."></textarea>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center sm:space-x-4 space-y-2 sm:space-y-0">
+                <button onclick="encodeText()" class="w-full sm:w-1/2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200">
+                    Verschlüsseln
+                </button>
+                <button onclick="decodeEmojis()" class="w-full sm:w-1/2 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200">
+                    Entschlüsseln
+                </button>
+            </div>
+
+            <div>
+                <label for="outputText" class="block text-gray-700 font-medium mb-1 mt-4">Ergebnis</label>
+                <textarea id="outputText" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 resize-none focus:outline-none" rows="4" readonly placeholder="Das Ergebnis wird hier angezeigt..."></textarea>
+            </div>
+
+            <div class="text-center">
+                <button onclick="copyToClipboard()" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200">
+                    Ergebnis kopieren
+                </button>
+            </div>
+            
+            <!-- Message box for user feedback, initially hidden -->
+            <div id="messageBox" class="hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-xl transition-all duration-300 ease-in-out">
+                Kopiert!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Der Schlüssel, der die Verschlüsselung steuert.
+        // Die Ziffern des Schlüssels bestimmen die Verschiebung.
+        const encryptionKey = "1264856375858";
+        
+        // Eine Liste aller Zeichen, die der Algorithmus verarbeiten kann.
+        const characters = [
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            'ä', 'ö', 'ü', 'ß', ' ', '.', ',', '!', '?', '-', '_', '(', ')', ':', ';',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        ];
+
+        // Eine Liste aller Zeichen, die als verschlüsselte Zeichen verwendet werden.
+        // Dies gewährleistet maximale Kompatibilität.
+        const emojis = [
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        ];
+
+        // Mappings für eine schnellere Suche
+        const charToIndex = new Map(characters.map((char, i) => [char, i]));
+        const emojiToIndex = new Map(emojis.map((emoji, i) => [emoji, i]));
+
+        function encodeText() {
+            const inputText = document.getElementById('inputText').value.toLowerCase();
+            let encodedEmojis = '';
+            for (let i = 0; i < inputText.length; i++) {
+                const char = inputText[i];
+                const keyShift = parseInt(encryptionKey[i % encryptionKey.length]);
+                const charIndex = charToIndex.get(char);
+
+                // Wenn das Zeichen nicht in unserem Alphabet ist, behalten wir es bei.
+                if (charIndex === undefined) {
+                    encodedEmojis += char;
+                    continue;
+                }
+
+                const shiftedIndex = (charIndex + keyShift) % emojis.length;
+                encodedEmojis += emojis[shiftedIndex];
+            }
+            document.getElementById('outputText').value = encodedEmojis;
+        }
+
+        function decodeEmojis() {
+            const emojiText = document.getElementById('inputText').value;
+            let decodedText = '';
+            for (let i = 0; i < emojiText.length; i++) {
+                const emoji = emojiText[i];
+                const keyShift = parseInt(encryptionKey[i % encryptionKey.length]);
+                const emojiIndex = emojiToIndex.get(emoji);
+
+                // Wenn das Zeichen kein Emoji ist, behalten wir es bei.
+                if (emojiIndex === undefined) {
+                    decodedText += emoji;
+                    continue;
+                }
+
+                // Modulo-Operation in JavaScript kann negativ sein, daher die Korrektur.
+                const originalIndex = (emojiIndex - keyShift + characters.length) % characters.length;
+                decodedText += characters[originalIndex];
+            }
+            document.getElementById('outputText').value = decodedText;
+        }
+
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            if (outputText.value) {
+                outputText.select();
+                document.execCommand('copy');
+
+                const messageBox = document.getElementById('messageBox');
+                messageBox.classList.remove('hidden');
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
